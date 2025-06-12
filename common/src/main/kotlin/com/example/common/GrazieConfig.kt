@@ -1,7 +1,4 @@
-import kotlinx.coroutines.runBlocking
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.jetbrains.code.prompt.executor.clients.grazie.koog.GrazieLLMClient
+package com.example.common
 
 import ai.grazie.api.gateway.client.DefaultUrlResolver
 import ai.grazie.api.gateway.client.PlatformConfigurationUrl
@@ -12,58 +9,41 @@ import ai.grazie.client.ktor.GrazieKtorHTTPClient
 import ai.grazie.model.auth.GrazieAgent
 import ai.grazie.model.auth.v5.AuthData
 import ai.grazie.model.cloud.AuthType
+import ai.jetbrains.code.prompt.executor.clients.grazie.koog.GrazieLLMClient
 import ai.jetbrains.code.prompt.executor.clients.grazie.koog.GraziePromptExecutor
+import ai.koog.prompt.executor.model.PromptExecutor
 
-suspend fun configureClient(userToken: String): SuspendableAPIGatewayClient {
+suspend fun configureGrazieExecutor(userToken: String): PromptExecutor {
     // Configure the HTTP client for sending requests
     val httpClient = SuspendableHTTPClient.WithV5(
         GrazieKtorHTTPClient.Client.Default,
         // Provide the authentication token and the application name and version
-        authData = AuthData(userToken, grazieAgent = GrazieAgent("koog-testing", "dev"))
+        authData = AuthData(userToken, grazieAgent = GrazieAgent("koog-mcp-demo-app", "0.1.0"))
     )
+
     // Parse the configuration file
     val resolutionResult = DefaultUrlResolver(PlatformConfigurationUrl.Production.GLOBAL, httpClient).resolve()
     val serverUrl = when (resolutionResult) {
         is ResolutionResult.Failure -> {
             // Throw exception because we cannot download the configuration file
+            System.err.println("Failed to resolve Grazie server URL: ${resolutionResult.problems.first()}")
             throw resolutionResult.problems.first()
         }
-
         is ResolutionResult.FallbackUrl -> {
             // Log a warning that for some reason the default URL is not accessible
-            println(resolutionResult.problems)
+            println("Warning: Using fallback Grazie server URL. Problems: ${resolutionResult.problems}")
             // Use a fallback URL instead of the default one
             resolutionResult.url
         }
-
         is ResolutionResult.Success -> resolutionResult.url
     }
+
     // Create an instance of the client
-    return SuspendableAPIGatewayClient(
-        // Provide the server URL
+    val gatewayClient = SuspendableAPIGatewayClient(
         serverUrl = serverUrl,
-        // Set the User authentication type (optional)
         authType = AuthType.User,
-        // Specify the HTTP client
         httpClient = httpClient,
     )
-}
 
-fun main() = runBlocking {
-    // Before you run the example, assign a corresponding API key as an environment variable.
-    val apiKey = System.getenv("GRAZIE_API_KEY")
-
-    val grazieClient = configureClient(apiKey)
-
-    val executor = GraziePromptExecutor(GrazieLLMClient(grazieClient))
-
-
-    val agent = AIAgent(
-        executor = executor,
-        systemPrompt = "You are a helpful assistant. Answer user questions concisely.",
-        llmModel = OpenAIModels.Chat.GPT4o
-    )
-
-    val result = agent.runAndGetResult("Hello! How can you help me?")
-    println(result)
+    return GraziePromptExecutor(GrazieLLMClient(gatewayClient))
 }
