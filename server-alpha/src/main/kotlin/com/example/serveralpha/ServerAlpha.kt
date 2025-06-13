@@ -20,6 +20,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import ai.koog.prompt.executor.model.PromptExecutor
+import io.ktor.server.cio.CIO
 import io.ktor.utils.io.streams.asInput
 import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -27,6 +28,7 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
@@ -41,6 +43,7 @@ class AlphaToolSet : ToolSet {
     fun simpleEchoAlpha(
         @LLMDescription("Message text") message: EchoRequest
     ): EchoResponse {
+        println("Alpha: Tool called")
         return EchoResponse("Agent Alpha echoes: ${message.message}", "Alpha")
     }
 }
@@ -70,7 +73,7 @@ class ServerAlpha(
                 properties = buildJsonObject {
                     putJsonObject("message") {
                         put("type", "string")
-                        put("description", "A message to be echoes")
+                        put("description", "A message to be echoed")
                     }
                 },
                 required = listOf("message")
@@ -82,7 +85,7 @@ class ServerAlpha(
             val result = agent.runAndGetResult("Echo the following message: $message")
 
             CallToolResult(
-                content = listOf(if (result == null) TextContent(result) else TextContent("")),
+                content = listOf(if (result != null) TextContent(result) else TextContent("")),
                 isError = result == null
             )
         }
@@ -96,7 +99,7 @@ class ServerAlpha(
     init {
         agent = AIAgent(
             executor = grazieExecutor,
-            systemPrompt = "You are Agent Alpha. You are a helpful assistant and can use the SimpleEchoToolAlpha. If asked to echo, use your tool.",
+            systemPrompt = "You are Agent Alpha. You are a helpful assistant and can use the simpleEchoAlpha as a tool. If asked to echo, use your tool and do not print anything else except tool's invocation result.",
             llmModel = OpenAIModels.Chat.GPT4o,
             toolRegistry = toolRegistry
         )
@@ -105,19 +108,13 @@ class ServerAlpha(
 
     override suspend fun start(wait: Boolean) {
         println("[AgentAlpha] Starting MCP server on port $port...")
-        val transport = StdioServerTransport(
-            System.`in`.asInput(),
-            System.out.asSink().buffered()
-        )
-        println("[AgentAlpha] MCP server started. Agent is ready.")
-        runBlocking {
-            mcpServer.connect(transport)
-            val done = Job()
-            mcpServer.onClose {
-                done.complete()
+
+        embeddedServer(CIO, host = host, port = port) {
+            mcp {
+                return@mcp mcpServer
             }
-            done.join()
-        }
+        }.startSuspend(wait = false)
+        println("[AgentAlpha] MCP server started. Agent is ready.")
     }
 
     override suspend fun stop() {

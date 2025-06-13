@@ -38,20 +38,6 @@ class ServerBeta(
 
     lateinit var agent: AIAgent
 
-    private val httpClient = HttpClient(CIO) {
-//        install(ContentNegotiation) {
-//            json(Json {
-//                prettyPrint = true
-//                isLenient = true
-//                ignoreUnknownKeys = true
-//            })
-//        }
-    }
-
-    private val ktorServer = embeddedServer(Netty, port = port, host = host, module = {
-        serverBetaModule(this@ServerBeta)
-    })
-
     lateinit var toolMcpRegistry: ToolRegistry
 
     private lateinit var toolRegistry: ToolRegistry
@@ -80,31 +66,11 @@ class ServerBeta(
     }
 
     override suspend fun start(wait: Boolean) {
-        println(" Starting its own server on port $port...")
-        ktorServer.start(wait = wait)
-        println(" Agent Beta is ready (primarily as a client in this demo).")
+        println("Not doing anything, actually")
     }
 
     override suspend fun stop() {
-        println(" Stopping its own server...")
-        ktorServer.stop(gracePeriodMillis = 1000, timeoutMillis = 2000)
-        httpClient.close()
-        println(" Agent Beta resources released.")
-    }
-}
-
-fun Application.serverBetaModule(serverInstance: ServerBeta) {
-    install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = true
-            ignoreUnknownKeys = true
-        })
-    }
-    routing {
-        get("/health") {
-            call.respondText("AgentBeta Server is healthy.")
-        }
+        println("Not doing anything here also")
     }
 }
 

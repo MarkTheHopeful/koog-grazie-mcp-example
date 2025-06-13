@@ -11,7 +11,7 @@ fun main() = runBlocking {
     }
 
     val grazieExecutor = configureGrazieExecutor(grazieApiKey)
-    val serverAlphaPort = 8080
+    val serverAlphaPort = 3001
 
     println("--- Initializing Server Alpha ---")
     val serverAlphaBuilder = ServerAlphaBuilder(

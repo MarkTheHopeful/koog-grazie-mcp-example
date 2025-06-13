@@ -15,8 +15,8 @@ fun main() = runBlocking {
     }
 
     val grazieExecutor = configureGrazieExecutor(grazieApiKey)
-    val serverBetaPort = 8081
-    val agentAlphaMcpUrl = "http://localhost:8080"
+    val serverBetaPort = 3002
+    val agentAlphaMcpUrl = "http://localhost:3001"
 
     println("--- Initializing Server Beta ---")
     val serverBetaBuilder = ServerBetaBuilder(
