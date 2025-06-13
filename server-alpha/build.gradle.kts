@@ -3,6 +3,7 @@ plugins {
     application
 }
 
+val mcpVersion = "0.4.0"
 val ktorVersion = "3.1.1"
 
 dependencies {
@@ -10,6 +11,7 @@ dependencies {
 
     implementation("ai.koog:koog-agents:0.2.1")
 
+    implementation("io.modelcontextprotocol:kotlin-sdk:${mcpVersion}")
     implementation("io.ktor:ktor-server-core-jvm:${ktorVersion}")
     implementation("io.ktor:ktor-server-netty-jvm:${ktorVersion}")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:${ktorVersion}")

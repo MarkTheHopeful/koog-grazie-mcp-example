@@ -21,7 +21,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 
 class ServerBeta(
     override val port: Int,
@@ -49,11 +54,11 @@ class ServerBeta(
 
     lateinit var toolMcpRegistry: ToolRegistry
 
-    lateinit private var toolRegistry: ToolRegistry
+    private lateinit var toolRegistry: ToolRegistry
 
     init {
-        scope.launch {
-            toolMcpRegistry = McpToolRegistryProvider.fromTransport(
+        toolMcpRegistry = runBlocking {
+            McpToolRegistryProvider.fromTransport(
                 transport = McpToolRegistryProvider.defaultSseTransport(agentAlphaMcpUrl)
             )
         }
