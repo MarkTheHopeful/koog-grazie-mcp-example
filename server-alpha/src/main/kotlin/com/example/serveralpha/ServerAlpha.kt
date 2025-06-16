@@ -33,9 +33,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 
-import kotlinx.io.asSink
-import kotlinx.io.buffered
-
 
 class AlphaToolSet : ToolSet {
     @KTool
@@ -80,10 +77,14 @@ class ServerAlpha(
             )
         ) { request ->
             val message = request.arguments["message"]?.jsonPrimitive?.content ?: return@addTool CallToolResult(
-                content = listOf(TextContent("The 'message' parameter is required."))
+                content = listOf(TextContent("The 'message' parameter is required.")),
+                isError = true
             )
+            println(message)
             val result = agent.runAndGetResult("Echo the following message: $message")
+            initializeAgent() // Since runAndGetResult is a one-time use for agents FIXME
 
+            println(result)
             CallToolResult(
                 content = listOf(if (result != null) TextContent(result) else TextContent("")),
                 isError = result == null
@@ -94,6 +95,16 @@ class ServerAlpha(
     private var agent: AIAgent
     private val toolRegistry = ToolRegistry {
         AlphaToolSet().asTools()
+    }
+
+    fun initializeAgent() {
+        agent = AIAgent(
+            executor = grazieExecutor,
+            systemPrompt = "You are Agent Alpha. You are a helpful assistant and can use the simpleEchoAlpha as a tool. If asked to echo, use your tool and do not print anything else except tool's invocation result.",
+            llmModel = OpenAIModels.Chat.GPT4o,
+            toolRegistry = toolRegistry
+        )
+        println("[AgentAlpha] Initialized with tools: ${toolRegistry.tools.joinToString { it.name }}")
     }
 
     init {

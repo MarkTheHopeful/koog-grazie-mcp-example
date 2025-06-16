@@ -43,6 +43,7 @@ fun main() = runBlocking {
                     println(" Sending to AgentBeta: '$inputLine'")
                     val result = serverBeta.agent.runAndGetResult(inputLine)
                     println(" << $result")
+                    serverBeta.initializeAgent() // Since runAndGetResult is a one-time use for agents FIXME
                 }
             }
         }
